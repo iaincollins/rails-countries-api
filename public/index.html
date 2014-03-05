@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Countries API Demo</title>
+    <link href="//netdna.bootstrapcdn.com/bootstrap/3.1.1/css/bootstrap.min.css" rel="stylesheet">
+    <script src="//ajax.googleapis.com/ajax/libs/jquery/1.11.0/jquery.min.js"></script>
+    <script src="//netdna.bootstrapcdn.com/bootstrap/3.1.1/js/bootstrap.min.js"></script>
+    <style>
+        ul.countries li {
+            margin-bottom: 10px;
+        }
+    </style>
+    <script type="text/javascript" charset="utf-8">
+    $(function() {
+
+        // Function to populate DB with data from the (read only) Tinatapi DB
+        //populateCountriesDb();
+        function populateCountriesDb() {
+            $.getJSON('http://api.tinata.co.uk/countries.json', function(countries) {
+                for (var i in countries) {
+                    var country = countries[i];
+                    $.post('/countries#create', { 'country[name]': country.name,
+                                                  'country[iso2]': country.iso2,
+                                                  'country[iso3]': country.iso3,
+                                                  'country[notes]': country.notes });
+                  }
+            });
+        }
+
+        $('#add_country').submit(function(e) {
+            $.post($(this).attr('action'), $(this).serialize(), addResult);
+            $('#country_count').text( parseInt($('#country_count').text()) + 1 );
+            this.reset();
+            e.preventDefault();
+        });
+        
+        $.getJSON('/countries', function(results) {
+            $.each(results, function() { addResult(this, true); });
+            $('#country_count').text(results.length);
+        });
+
+        $(document).on('click touch', 'a.delete-country', function(e) {
+            e.preventDefault();
+            var li = $(this).parents('li');
+            $.ajax({
+                url: $(this).attr('href'),
+                type: 'DELETE',
+                success: function(result) {
+                    $(li).remove();
+                    $('#country_count').text( parseInt($('#country_count').text()) - 1 );
+                }
+            });
+        });
+            
+        function addResult(result, append) {
+            // @fixme HTML in JS (yuck!)
+            var html = '<li><h4>' + result.name
+                      +' <a href="/countries/' + result.id + '" class="btn btn-default btn-xs delete-country pull-right">Delete</a>'
+                      + '</h4>'
+                      +'<span class="text-muted">(' + result.iso2 + ', ' + result.iso3 + ')</span>';
+                      
+            if (result.notes != null)
+                html += '<br/><strong>Notes:</strong></br><p>'+result.notes+'</p>';
+                
+            html += '</ul>';
+            
+            if (append == true) {
+                $('#countries_result').append(html);
+            } else {
+                $('#countries_result').prepend(html);
+            }
+        }
+    });
+    </script>
+  <body>
+    <div class="container">
+      <h1>Countries API Demo</h1>
+      <p class="lead">
+          A simple API that exports editable information about countries.
+      </p>
+      <div class="row">
+          <form id="add_country" action="/countries#create" method="post" role="form" class="form-horizontal col-sm-6">
+            <div class="form-group">
+                <div class="col-sm-12">
+                    <h3>Add a new country</h3>
+                </div>
+            </div>
+            <div class="form-group">
+              <label class="col-sm-2">Name</label>
+              <div class="col-sm-10">
+                <input type="text" name="country[name]"/ class="form-control">
+              </div>
+            </div>
+            <div class="form-group">
+              <label class="col-sm-2">ISO2</label>
+              <div class="col-sm-10">
+                <input type="text" name="country[iso2]"/ class="form-control">
+              </div>
+            </div>
+            <div class="form-group">
+              <label class="col-sm-2">ISO3</label>
+              <div class="col-sm-10">
+                <input type="text" name="country[iso3]"/ class="form-control">
+              </div>
+            </div>
+            <div class="form-group">
+              <label class="col-sm-2">Notes</label>
+              <div class="col-sm-10">
+                <textarea name="country[notes]" rows="4" class="form-control"></textarea>
+              </div>
+            </div>
+            <button class="btn btn-primary pull-right" type="submit">Add Country</button>
+          </form>
+          <div class="col-sm-3">
+              <p>&nbsp;</p>
+          </div>
+          <div class="col-sm-3">
+              <div class="row">
+                <div class="col-sm-12">
+                    <h3>Example usage</h3>
+                </div>
+              </div>
+              <div class="row">
+                <div class="col-sm-1">e.g.</div>
+                <div class="col-sm-11">
+                      <a href="/countries.json">/countries.json</a><br/>
+                      <a href="/countries.xml">/countries.xml</a><br/>
+                      <a href="/countries.html">/countries.html</a><br/>
+                      <a href="/countries/1.json">/countries/1.json</a><br/>
+                </div>
+              </div>
+              <br/>
+              <p class="text-muted">
+                  NB: This is just a scratch project created for fun.
+              </p>
+         </div>
+      </div>
+      <div class="row">
+        <div class="col-sm-6">
+          <h2><span id="country_count"></span> Countries in the database </h2>
+          <hr/>
+          <ul id="countries_result" class="list-unstyled countries"></ul>
+        </div>
+      </div>
+    </div>
+  </body>
+</html>
